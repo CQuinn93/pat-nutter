@@ -1,45 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database('users.db');
+const db = new sqlite3.Database('patNutter.db');
 
-// Function to check if a column exists in a table
-function columnExists(table, column, callback) {
-    db.all(`PRAGMA table_info(${table})`, (err, rows) => {
-        if (err) {
-            callback(err);
-        } else {
-            const columns = rows.map(row => row.name);
-            callback(null, columns.includes(column));
-        }
-    });
-}
-
-// Add resetToken and resetTokenExpiry columns if they do not exist
 db.serialize(() => {
-    columnExists('users', 'resetToken', (err, exists) => {
-        if (err) {
-            console.error('Database check error:', err.message);
-        } else if (!exists) {
-            db.run('ALTER TABLE users ADD COLUMN resetToken TEXT', (err) => {
-                if (err) {
-                    console.error('Error adding resetToken column:', err.message);
-                }
-            });
-        }
-    });
-
-    columnExists('users', 'resetTokenExpiry', (err, exists) => {
-        if (err) {
-            console.error('Database check error:', err.message);
-        } else if (!exists) {
-            db.run('ALTER TABLE users ADD COLUMN resetTokenExpiry INTEGER', (err) => {
-                if (err) {
-                    console.error('Error adding resetTokenExpiry column:', err.message);
-                }
-            });
-        }
-    });
-
-    // Initial table creation
     db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE,
@@ -47,6 +9,21 @@ db.serialize(() => {
     password TEXT,
     resetToken TEXT,
     resetTokenExpiry INTEGER
+  )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS competitions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId INTEGER,
+    name TEXT,
+    description TEXT,
+    FOREIGN KEY(userId) REFERENCES users(id)
+  )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS user_competitions (
+    userId INTEGER,
+    competitionId INTEGER,
+    FOREIGN KEY(userId) REFERENCES users(id),
+    FOREIGN KEY(competitionId) REFERENCES competitions(id)
   )`);
 });
 
